@@ -26,6 +26,8 @@ async def lifespan(app: FastAPI):
         # In a production environment, you might want to exit here
         print(f"CRITICAL: Failed to load credentials: {e}")
     yield
+
+
 app = FastAPI(lifespan=lifespan)
 
 
