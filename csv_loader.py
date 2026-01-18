@@ -23,32 +23,26 @@ def load_credentials_from_csv(csv_file_path: str = None) -> dict[str, str]:
 
     load_start_time = time.time()
 
-    try:
-        with open(csv_file_path, "r") as file:
-            line_count = 0
-            for line in file:
-                line = line.strip()
-                if line:
-                    stored_username, stored_password = line.split(",", 1)
-                    credentials_map[stored_username] = stored_password
-                    line_count += 1
+    # Clear existing mapping to ensure we don't have stale/mixed data on reload
+    credentials_map.clear()
 
-        load_duration = (time.time() - load_start_time) * 1000
-        log_json(logger, 'info', {
-            "event": "credentials_loaded",
-            "credentials_count": line_count,
-            "load_duration_ms": round(load_duration, 2)
-        })
-    except FileNotFoundError:
-        log_json(logger, 'error', {
-            "event": "credentials_load_error",
-            "error": "credentials_file_not_found"
-        })
-    except Exception as e:
-        log_json(logger, 'error', {
-            "event": "credentials_load_error",
-            "error": str(e)
-        })
+    with open(csv_file_path, "r") as file:
+        line_count = 0
+        for line in file:
+            line = line.strip()
+            if line:
+                if "," not in line:
+                    raise ValueError(f"Invalid format in credentials file at line {line_count + 1}: {line}")
+                stored_username, stored_password = line.split(",", 1)
+                credentials_map[stored_username] = stored_password
+                line_count += 1
+
+    load_duration = (time.time() - load_start_time) * 1000
+    log_json(logger, 'info', {
+        "event": "credentials_loaded",
+        "credentials_count": line_count,
+        "load_duration_ms": round(load_duration, 2)
+    })
 
     return credentials_map
 
