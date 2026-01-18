@@ -19,7 +19,17 @@ async def load_credentials():
     """
     Load credentials from CSV file into hashmap at application startup.
     """
-    load_credentials_from_csv()
+    try:
+        load_credentials_from_csv()
+    except Exception as e:
+        log_json(logger, 'critical', {
+            "event": "startup_failure",
+            "reason": "credentials_load_failed",
+            "error": str(e)
+        })
+        # If credentials can't be loaded, the app might be in an inconsistent state
+        # In a production environment, you might want to exit here
+        print(f"CRITICAL: Failed to load credentials: {e}")
 
 
 def validate_credentials(username: str, password: str) -> bool:
