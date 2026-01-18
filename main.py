@@ -1,23 +1,18 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 import time
 from csv_loader import load_credentials_from_csv, get_credentials_map
 from logger import get_logger, log_json
 
 logger = get_logger(__name__)
 
-app = FastAPI()
 
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-@app.on_event("startup")
-async def load_credentials():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """
-    Load credentials from CSV file into hashmap at application startup.
+    Lifespan context manager for application startup and shutdown.
+    Loads credentials from CSV file into hashmap at application startup.
     """
     try:
         load_credentials_from_csv()
@@ -30,6 +25,13 @@ async def load_credentials():
         # If credentials can't be loaded, the app might be in an inconsistent state
         # In a production environment, you might want to exit here
         print(f"CRITICAL: Failed to load credentials: {e}")
+    yield
+app = FastAPI(lifespan=lifespan)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 
 def validate_credentials(username: str, password: str) -> bool:
