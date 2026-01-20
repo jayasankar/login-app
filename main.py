@@ -26,6 +26,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class PasswordResetRequest(BaseModel):
+    username: str
+
+
 def validate_credentials(username: str, password: str) -> bool:
     """
     Validate username and password against the credentials hashmap.
@@ -123,6 +127,69 @@ async def login(request: LoginRequest):
                 "total_duration_ms": round(request_duration, 2)
             })
         raise
+
+
+@app.post("/password-reset")
+async def password_reset(request: PasswordResetRequest):
+    """
+    Password reset endpoint that checks if username exists in the credentials file.
+    Returns success message if user exists, fail message otherwise.
+    Note: Actual password reset logic is not implemented yet.
+    """
+    request_start_time = time.time()
+
+    log_json(logger, 'info', {
+        "event": "password_reset_request_received",
+        "username": request.username,
+        "endpoint": "/password-reset"
+    })
+
+    try:
+        credentials_map = get_credentials_map()
+
+        # Check if credentials hashmap is loaded
+        if not credentials_map:
+            log_json(logger, 'error', {
+                "event": "password_reset_error",
+                "username": request.username,
+                "error": "credentials_not_loaded"
+            })
+            raise HTTPException(status_code=500, detail="Credentials not loaded")
+
+        # Check if user exists in the credentials
+        if request.username in credentials_map:
+            request_duration = (time.time() - request_start_time) * 1000
+            log_json(logger, 'info', {
+                "event": "password_reset_success",
+                "username": request.username,
+                "status_code": 200,
+                "total_duration_ms": round(request_duration, 2)
+            })
+            # TODO: Implement actual password reset logic here
+            return {"message": "success", "detail": "Password reset initiated. Check your email for instructions."}
+        else:
+            request_duration = (time.time() - request_start_time) * 1000
+            log_json(logger, 'warning', {
+                "event": "password_reset_failed",
+                "username": request.username,
+                "reason": "user_not_found",
+                "status_code": 404,
+                "total_duration_ms": round(request_duration, 2)
+            })
+            return {"message": "fail", "detail": "User not found"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        request_duration = (time.time() - request_start_time) * 1000
+        log_json(logger, 'error', {
+            "event": "password_reset_error",
+            "username": request.username,
+            "error": str(e),
+            "total_duration_ms": round(request_duration, 2)
+        })
+        raise HTTPException(
+            status_code=500, detail=f"Error processing password reset: {str(e)}"
+        )
 
 
 @app.get("/")
