@@ -1,3 +1,4 @@
+import csv
 import os
 import time
 from logger import get_logger, log_json
@@ -25,13 +26,9 @@ def load_credentials_from_csv(csv_file_path: str = None) -> dict[str, str]:
 
     try:
         with open(csv_file_path, "r") as file:
-            line_count = 0
-            for line in file:
-                line = line.strip()
-                if line:
-                    stored_username, stored_password = line.split(",", 1)
-                    credentials_map[stored_username] = stored_password
-                    line_count += 1
+            reader = csv.reader(file)
+            credentials_map.update({row[0]: row[1] for row in reader if len(row) == 2})
+            line_count = len(credentials_map)
 
         load_duration = (time.time() - load_start_time) * 1000
         log_json(logger, 'info', {
