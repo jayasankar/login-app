@@ -29,7 +29,15 @@ def load_credentials_from_csv(csv_file_path: str = None) -> dict[str, str]:
             for line in file:
                 line = line.strip()
                 if line:
-                    stored_username, stored_password = line.split(",", 1)
+                    parts = line.split(",", 1)
+                    if len(parts) != 2:
+                        log_json(logger, 'warning', {
+                            "event": "malformed_csv_line",
+                            "line": line,
+                            "error": "line does not contain exactly one comma"
+                        })
+                        continue
+                    stored_username, stored_password = parts
                     credentials_map[stored_username] = stored_password
                     line_count += 1
 
